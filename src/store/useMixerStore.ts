@@ -12,6 +12,8 @@ interface MixerState {
   setVolume: (trackId: string, volume: number) => void;
   toggleMute: (trackId: string) => void;
   toggleSolo: (trackId: string) => void;
+  addChannel: (trackId: string) => void;
+  removeChannel: (trackId: string) => void;
 }
 
 const initialChannels: Record<string, ChannelState> = {};
@@ -51,4 +53,18 @@ export const useMixerStore = create<MixerState>((set) => ({
         },
       },
     })),
+
+  addChannel: (trackId) =>
+    set((state) => ({
+      channels: {
+        ...state.channels,
+        [trackId]: { volume: 80, muted: false, soloed: false },
+      },
+    })),
+
+  removeChannel: (trackId) =>
+    set((state) => {
+      const { [trackId]: _removed, ...rest } = state.channels;
+      return { channels: rest };
+    }),
 }));

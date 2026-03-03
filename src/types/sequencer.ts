@@ -10,6 +10,8 @@ export interface Track {
   instrumentKey: string;
   steps: Step[];
   color: string;
+  synthParams: Record<string, number | string>;
+  selectedStep: number | null;
 }
 
 export interface Pattern {

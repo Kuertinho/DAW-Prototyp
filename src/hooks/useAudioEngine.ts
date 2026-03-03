@@ -17,8 +17,8 @@ export function useAudioEngine() {
     await audioEngine.init();
 
     // Load tracks into engine
-    const { tracks } = useSequencerStore.getState();
-    audioEngine.loadTracks(tracks);
+    const { tracks, stepCount } = useSequencerStore.getState();
+    audioEngine.loadTracks(tracks, stepCount);
   }, []);
 
   return { init };

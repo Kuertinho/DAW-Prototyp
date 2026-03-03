@@ -2,8 +2,6 @@ import * as Tone from 'tone';
 import { Track } from '../types/sequencer';
 import { TrackInstrument } from './TrackInstrument';
 
-// Lazy import to avoid circular dependency at module init time
-// useTransportStore is imported dynamically inside the callback
 let setCurrentStep: ((step: number) => void) | null = null;
 
 export function registerStepCallback(cb: (step: number) => void): void {
@@ -15,6 +13,7 @@ class AudioEngine {
   private sequence: Tone.Sequence | null = null;
   private tracks: Track[] = [];
   private initialized = false;
+  private currentStepCount = 16;
 
   async init(): Promise<void> {
     if (this.initialized) return;
@@ -23,31 +22,11 @@ class AudioEngine {
     this.initialized = true;
   }
 
-  loadTracks(tracks: Track[]): void {
-    // Dispose old instruments
-    this.instruments.forEach((inst) => inst.dispose());
-    this.instruments.clear();
-
-    if (this.sequence) {
-      this.sequence.dispose();
-      this.sequence = null;
-    }
-
-    this.tracks = tracks;
-
-    // Create one instrument per track
-    tracks.forEach((track) => {
-      this.instruments.set(track.id, new TrackInstrument(track.instrumentKey));
-    });
-
-    // Single Sequence for all tracks
-    const stepIndices = Array.from({ length: 16 }, (_, i) => i);
-
-    this.sequence = new Tone.Sequence(
+  private buildSequence(count: number): Tone.Sequence {
+    const stepIndices = Array.from({ length: count }, (_, i) => i);
+    const seq = new Tone.Sequence(
       (time, stepIndex) => {
-        // Read live state directly — avoids stale closure
         const { tracks: liveTracks } = (
-          // Dynamic import of store state (no React import)
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (globalThis as any).__dawSequencerStore?.getState() ?? { tracks: this.tracks }
         ) as { tracks: Track[] };
@@ -62,7 +41,6 @@ class AudioEngine {
           inst.trigger(step.note, time, step.velocity);
         });
 
-        // Defer UI update to animation frame so it aligns with audio
         if (setCurrentStep) {
           const cb = setCurrentStep;
           Tone.getDraw().schedule(() => {
@@ -73,8 +51,27 @@ class AudioEngine {
       stepIndices,
       '16n'
     );
+    seq.loop = true;
+    return seq;
+  }
 
-    this.sequence.loop = true;
+  loadTracks(tracks: Track[], stepCount = 16): void {
+    this.instruments.forEach((inst) => inst.dispose());
+    this.instruments.clear();
+
+    if (this.sequence) {
+      this.sequence.dispose();
+      this.sequence = null;
+    }
+
+    this.tracks = tracks;
+    this.currentStepCount = stepCount;
+
+    tracks.forEach((track) => {
+      this.instruments.set(track.id, new TrackInstrument(track.instrumentKey));
+    });
+
+    this.sequence = this.buildSequence(stepCount);
   }
 
   play(): void {
@@ -99,6 +96,42 @@ class AudioEngine {
 
   updateTracks(tracks: Track[]): void {
     this.tracks = tracks;
+  }
+
+  setStepCount(n: number): void {
+    this.currentStepCount = n;
+    if (!this.sequence) return; // not yet loaded
+
+    const wasPlaying = Tone.getTransport().state === 'started';
+
+    if (wasPlaying) {
+      Tone.getTransport().stop();
+      this.sequence.stop();
+    }
+
+    this.sequence.dispose();
+    this.sequence = this.buildSequence(n);
+
+    if (wasPlaying) {
+      this.sequence.start(0);
+      Tone.getTransport().start();
+    }
+  }
+
+  addTrack(track: Track): void {
+    this.instruments.set(track.id, new TrackInstrument(track.instrumentKey));
+  }
+
+  removeTrack(trackId: string): void {
+    const inst = this.instruments.get(trackId);
+    if (inst) {
+      inst.dispose();
+      this.instruments.delete(trackId);
+    }
+  }
+
+  setTrackParam(trackId: string, key: string, value: number | string): void {
+    this.instruments.get(trackId)?.setParam(key, value);
   }
 
   isReady(): boolean {

@@ -20,3 +20,44 @@ export function createFMLead(): Tone.FMSynth {
     },
   });
 }
+
+export function createAMLead(): Tone.AMSynth {
+  return new Tone.AMSynth({
+    harmonicity: 3,
+    oscillator: { type: 'sine' },
+    envelope: {
+      attack: 0.01,
+      decay: 0.3,
+      sustain: 0.3,
+      release: 0.5,
+    },
+    modulation: { type: 'square' },
+    modulationEnvelope: {
+      attack: 0.002,
+      decay: 0.2,
+      sustain: 0.5,
+      release: 0.3,
+    },
+  });
+}
+
+export function createPluckLead(): Tone.FMSynth {
+  return new Tone.FMSynth({
+    harmonicity: 2,
+    modulationIndex: 20,
+    oscillator: { type: 'sine' },
+    envelope: {
+      attack: 0.001,
+      decay: 0.1,
+      sustain: 0,
+      release: 0.1,
+    },
+    modulation: { type: 'triangle' },
+    modulationEnvelope: {
+      attack: 0.001,
+      decay: 0.05,
+      sustain: 0,
+      release: 0.05,
+    },
+  });
+}

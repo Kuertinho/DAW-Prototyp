@@ -1,17 +1,19 @@
 import * as Tone from 'tone';
 import { masterBus } from './effects/MasterBus';
-import { createKick808, createKickPunchy } from './instruments/KickSynth';
-import { createClap } from './instruments/ClapSynth';
+import { createKick808, createKickPunchy, createKickSub, createKickSnap } from './instruments/KickSynth';
+import { createClap, createSnare } from './instruments/ClapSynth';
 import { createHiHatClosed, createHiHatOpen } from './instruments/HiHatSynth';
-import { createAcidBass } from './instruments/BassSynth';
-import { createFMLead } from './instruments/LeadSynth';
+import { createAcidBass, createSubBass, createReeseBass } from './instruments/BassSynth';
+import { createFMLead, createAMLead, createPluckLead } from './instruments/LeadSynth';
+import { SynthTypeName } from '../types/audio';
 
 type AnyInstrument =
   | Tone.MembraneSynth
   | Tone.NoiseSynth
   | Tone.MetalSynth
   | Tone.MonoSynth
-  | Tone.FMSynth;
+  | Tone.FMSynth
+  | Tone.AMSynth;
 
 // Per-track effects chain
 interface TrackFX {
@@ -51,11 +53,18 @@ export class TrackInstrument {
     switch (key) {
       case 'kick-808':     return createKick808();
       case 'kick-punchy':  return createKickPunchy();
+      case 'kick-sub':     return createKickSub();
+      case 'kick-snap':    return createKickSnap();
       case 'clap':         return createClap();
+      case 'snare':        return createSnare();
       case 'hihat-closed': return createHiHatClosed();
       case 'hihat-open':   return createHiHatOpen();
       case 'bass-acid':    return createAcidBass();
+      case 'bass-sub':     return createSubBass();
+      case 'bass-reese':   return createReeseBass();
       case 'lead-fm':      return createFMLead();
+      case 'lead-am':      return createAMLead();
+      case 'lead-pluck':   return createPluckLead();
       default:             return createKick808();
     }
   }
@@ -63,12 +72,12 @@ export class TrackInstrument {
   private buildFX(key: string): TrackFX {
     const volume = new Tone.Volume(0);
 
-    if (key === 'clap') {
+    if (key === 'clap' || key === 'snare') {
       const reverb = new Tone.Reverb({ decay: 1.5, wet: 0.35 });
       return { reverb, volume };
     }
 
-    if (key === 'lead-fm') {
+    if (key === 'lead-fm' || key === 'lead-am' || key === 'lead-pluck') {
       const delay = new Tone.FeedbackDelay({ delayTime: '8n', feedback: 0.35, wet: 0.3 });
       return { delay, volume };
     }
@@ -85,7 +94,6 @@ export class TrackInstrument {
       this.synth instanceof Tone.NoiseSynth ||
       this.synth instanceof Tone.MetalSynth
     ) {
-      // These don't take a note argument
       (this.synth as Tone.NoiseSynth).triggerAttackRelease(dur, time, vel);
     } else {
       (this.synth as Tone.MembraneSynth).triggerAttackRelease(note, dur, time, vel);
@@ -94,6 +102,67 @@ export class TrackInstrument {
 
   setVolume(db: number): void {
     this.fx.volume.volume.value = db;
+  }
+
+  getSynthType(): SynthTypeName {
+    if (this.synth instanceof Tone.MembraneSynth) return 'MembraneSynth';
+    if (this.synth instanceof Tone.NoiseSynth) return 'NoiseSynth';
+    if (this.synth instanceof Tone.MetalSynth) return 'MetalSynth';
+    if (this.synth instanceof Tone.MonoSynth) return 'MonoSynth';
+    if (this.synth instanceof Tone.AMSynth) return 'AMSynth';
+    if (this.synth instanceof Tone.FMSynth) return 'FMSynth';
+    return 'MembraneSynth';
+  }
+
+  setParam(key: string, value: number | string): void {
+    const s = this.synth;
+    try {
+      if (s instanceof Tone.MembraneSynth) {
+        if (key === 'pitchDecay') s.pitchDecay = value as number;
+        else if (key === 'octaves') s.octaves = value as number;
+        else if (key === 'decay') s.envelope.decay = value as number;
+        else if (key === 'release') s.envelope.release = value as number;
+      } else if (s instanceof Tone.NoiseSynth) {
+        if (key === 'noiseType') s.noise.type = value as Tone.NoiseType;
+        else if (key === 'attack') s.envelope.attack = value as number;
+        else if (key === 'decay') s.envelope.decay = value as number;
+      } else if (s instanceof Tone.MetalSynth) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (key === 'harmonicity') (s.harmonicity as any).value = value as number;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        else if (key === 'modulationIndex') (s.modulationIndex as any).value = value as number;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        else if (key === 'resonance') (s.resonance as any).value = value as number;
+        else if (key === 'decay') s.envelope.decay = value as number;
+      } else if (s instanceof Tone.MonoSynth) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (key === 'oscType') (s.oscillator as any).type = value as string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        else if (key === 'filterQ') (s.filter.Q as any).value = value as number;
+        else if (key === 'filterDecay') s.filterEnvelope.decay = value as number;
+        else if (key === 'attack') s.envelope.attack = value as number;
+        else if (key === 'decay') s.envelope.decay = value as number;
+        else if (key === 'sustain') s.envelope.sustain = value as number;
+      } else if (s instanceof Tone.AMSynth) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (key === 'harmonicity') (s.harmonicity as any).value = value as number;
+        else if (key === 'attack') s.envelope.attack = value as number;
+        else if (key === 'decay') s.envelope.decay = value as number;
+        else if (key === 'sustain') s.envelope.sustain = value as number;
+        else if (key === 'release') s.envelope.release = value as number;
+      } else if (s instanceof Tone.FMSynth) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (key === 'harmonicity') (s.harmonicity as any).value = value as number;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        else if (key === 'modulationIndex') (s.modulationIndex as any).value = value as number;
+        else if (key === 'attack') s.envelope.attack = value as number;
+        else if (key === 'decay') s.envelope.decay = value as number;
+        else if (key === 'sustain') s.envelope.sustain = value as number;
+        else if (key === 'release') s.envelope.release = value as number;
+      }
+    } catch (e) {
+      console.warn('setParam error:', key, value, e);
+    }
   }
 
   dispose(): void {

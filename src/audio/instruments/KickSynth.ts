@@ -25,3 +25,29 @@ export function createKickPunchy(): Tone.MembraneSynth {
     },
   });
 }
+
+export function createKickSub(): Tone.MembraneSynth {
+  return new Tone.MembraneSynth({
+    pitchDecay: 0.12,
+    octaves: 10,
+    envelope: {
+      attack: 0.001,
+      decay: 0.8,
+      sustain: 0,
+      release: 0.2,
+    },
+  });
+}
+
+export function createKickSnap(): Tone.MembraneSynth {
+  return new Tone.MembraneSynth({
+    pitchDecay: 0.02,
+    octaves: 3,
+    envelope: {
+      attack: 0.001,
+      decay: 0.15,
+      sustain: 0,
+      release: 0.04,
+    },
+  });
+}

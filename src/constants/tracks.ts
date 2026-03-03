@@ -1,8 +1,8 @@
 import { Track, Step } from '../types/sequencer';
 import { STEP_COUNT } from './defaults';
 
-function makeSteps(defaultNote: string): Step[] {
-  return Array.from({ length: STEP_COUNT }, () => ({
+export function makeSteps(defaultNote: string, count = STEP_COUNT): Step[] {
+  return Array.from({ length: count }, () => ({
     active: false,
     velocity: 1,
     note: defaultNote,
@@ -16,6 +16,8 @@ export const INITIAL_TRACKS: Track[] = [
     instrumentKey: 'kick-808',
     steps: makeSteps('C1'),
     color: '#e05252',
+    synthParams: {},
+    selectedStep: null,
   },
   {
     id: 'track-kick-punchy',
@@ -23,6 +25,8 @@ export const INITIAL_TRACKS: Track[] = [
     instrumentKey: 'kick-punchy',
     steps: makeSteps('C1'),
     color: '#e07a52',
+    synthParams: {},
+    selectedStep: null,
   },
   {
     id: 'track-clap',
@@ -30,6 +34,8 @@ export const INITIAL_TRACKS: Track[] = [
     instrumentKey: 'clap',
     steps: makeSteps('C4'),
     color: '#e0c452',
+    synthParams: {},
+    selectedStep: null,
   },
   {
     id: 'track-hihat-closed',
@@ -37,6 +43,8 @@ export const INITIAL_TRACKS: Track[] = [
     instrumentKey: 'hihat-closed',
     steps: makeSteps('C5'),
     color: '#52e07a',
+    synthParams: {},
+    selectedStep: null,
   },
   {
     id: 'track-hihat-open',
@@ -44,6 +52,8 @@ export const INITIAL_TRACKS: Track[] = [
     instrumentKey: 'hihat-open',
     steps: makeSteps('C5'),
     color: '#52c4e0',
+    synthParams: {},
+    selectedStep: null,
   },
   {
     id: 'track-bass',
@@ -51,6 +61,8 @@ export const INITIAL_TRACKS: Track[] = [
     instrumentKey: 'bass-acid',
     steps: makeSteps('C2'),
     color: '#5274e0',
+    synthParams: {},
+    selectedStep: null,
   },
   {
     id: 'track-lead',
@@ -58,6 +70,8 @@ export const INITIAL_TRACKS: Track[] = [
     instrumentKey: 'lead-fm',
     steps: makeSteps('C4'),
     color: '#a052e0',
+    synthParams: {},
+    selectedStep: null,
   },
 ];
 
@@ -67,16 +81,12 @@ export function applyDefaultPattern(tracks: Track[]): Track[] {
     const steps = [...track.steps.map((s) => ({ ...s }))];
 
     if (track.instrumentKey === 'kick-808') {
-      // Four-on-the-floor: steps 0, 4, 8, 12
       [0, 4, 8, 12].forEach((i) => { steps[i].active = true; });
     } else if (track.instrumentKey === 'hihat-closed') {
-      // Every even step (8th notes)
       [0, 2, 4, 6, 8, 10, 12, 14].forEach((i) => { steps[i].active = true; });
     } else if (track.instrumentKey === 'clap') {
-      // Clap on 2 and 4 (steps 4, 12)
       [4, 12].forEach((i) => { steps[i].active = true; });
     } else if (track.instrumentKey === 'hihat-open') {
-      // Open hi-hat on offbeats: 2, 6, 10, 14
       [2, 10].forEach((i) => { steps[i].active = true; });
     }
 

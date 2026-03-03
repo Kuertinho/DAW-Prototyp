@@ -11,3 +11,15 @@ export function createClap(): Tone.NoiseSynth {
     },
   });
 }
+
+export function createSnare(): Tone.NoiseSynth {
+  return new Tone.NoiseSynth({
+    noise: { type: 'brown' },
+    envelope: {
+      attack: 0.01,
+      decay: 0.3,
+      sustain: 0,
+      release: 0.08,
+    },
+  });
+}

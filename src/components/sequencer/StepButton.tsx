@@ -6,27 +6,49 @@ interface Props {
   trackId: string;
   trackColor: string;
   stepIndex: number;
-  groupStart: boolean; // first step of a 4-step group
+  groupStart: boolean;
+  isPitched?: boolean;
 }
 
-export const StepButton = memo(function StepButton({ trackId, trackColor, stepIndex, groupStart }: Props) {
-  // Subscribe to only this step's active state
-  const active = useSequencerStore(
-    (s) => s.tracks.find((t) => t.id === trackId)?.steps[stepIndex]?.active ?? false
+export const StepButton = memo(function StepButton({
+  trackId,
+  trackColor,
+  stepIndex,
+  groupStart,
+  isPitched = false,
+}: Props) {
+  const step = useSequencerStore(
+    (s) => s.tracks.find((t) => t.id === trackId)?.steps[stepIndex]
   );
-  const isCurrentStep = useTransportStore((s) => s.currentStep === stepIndex);
-  const toggleStep = useSequencerStore((s) => s.toggleStep);
+  const active = step?.active ?? false;
+  const note = step?.note ?? '';
+  const selectedStep = useSequencerStore(
+    (s) => s.tracks.find((t) => t.id === trackId)?.selectedStep ?? null
+  );
+  const isSelected = selectedStep === stepIndex;
 
+  const isCurrentStep = useTransportStore((s) => s.currentStep === stepIndex);
   const isPlaying = useTransportStore((s) => s.isPlaying);
+  const toggleStep = useSequencerStore((s) => s.toggleStep);
+  const selectStep = useSequencerStore((s) => s.selectStep);
+
+  function handleClick() {
+    toggleStep(trackId, stepIndex);
+    if (isPitched) {
+      selectStep(trackId, isSelected ? null : stepIndex);
+    }
+  }
 
   return (
     <button
-      onClick={() => toggleStep(trackId, stepIndex)}
+      onClick={handleClick}
       style={{
         width: 'var(--step-size)',
         height: 'var(--step-size)',
         borderRadius: 5,
-        border: groupStart
+        border: isSelected
+          ? `2px solid rgba(255,255,255,0.7)`
+          : groupStart
           ? '1px solid var(--border-light)'
           : '1px solid var(--border)',
         background: active
@@ -44,6 +66,7 @@ export const StepButton = memo(function StepButton({ trackId, trackColor, stepIn
           : 'none',
         flexShrink: 0,
         marginLeft: groupStart && stepIndex !== 0 ? 6 : 0,
+        overflow: 'hidden',
       }}
       aria-pressed={active}
       aria-label={`Step ${stepIndex + 1}${active ? ' active' : ''}`}
@@ -60,6 +83,23 @@ export const StepButton = memo(function StepButton({ trackId, trackColor, stepIn
           background: 'rgba(255,255,255,0.25)',
           pointerEvents: 'none',
         }} />
+      )}
+      {/* Note label on active pitched steps */}
+      {active && isPitched && note && (
+        <span style={{
+          position: 'absolute',
+          bottom: 2,
+          left: 0,
+          right: 0,
+          textAlign: 'center',
+          fontSize: 7,
+          color: 'rgba(255,255,255,0.85)',
+          fontWeight: 700,
+          pointerEvents: 'none',
+          lineHeight: 1,
+        }}>
+          {note}
+        </span>
       )}
     </button>
   );

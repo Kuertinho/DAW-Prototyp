@@ -13,6 +13,7 @@ export function useSequencerSync() {
   const bpm = useTransportStore((s) => s.bpm);
   const channels = useMixerStore((s) => s.channels);
   const tracks = useSequencerStore((s) => s.tracks);
+  const stepCount = useSequencerStore((s) => s.stepCount);
 
   // Sync BPM
   useEffect(() => {
@@ -25,7 +26,6 @@ export function useSequencerSync() {
 
     Object.entries(channels).forEach(([trackId, ch]) => {
       const silenced = ch.muted || (hasSolo && !ch.soloed);
-      // Map 0–100 → -Infinity to 0 dB (simple linear for now)
       const db = silenced ? -Infinity : (ch.volume / 100) * 0 + (1 - ch.volume / 100) * -40;
       audioEngine.setTrackVolume(trackId, db);
     });
@@ -35,4 +35,9 @@ export function useSequencerSync() {
   useEffect(() => {
     audioEngine.updateTracks(tracks);
   }, [tracks]);
+
+  // Sync step count
+  useEffect(() => {
+    audioEngine.setStepCount(stepCount);
+  }, [stepCount]);
 }
