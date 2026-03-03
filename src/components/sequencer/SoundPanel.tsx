@@ -64,6 +64,56 @@ interface Props {
 
 export function SoundPanel({ track }: Props) {
   const setSynthParam = useSequencerStore((s) => s.setSynthParam);
+
+  // Sample track: show filename + playback rate
+  if (track.trackType === 'sample') {
+    const playbackRate = (track.synthParams.playbackRate as number) ?? 1;
+    const filename = track.sampleUrl
+      ? track.name
+      : 'No sample loaded';
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 12,
+          padding: '8px 16px 8px 140px',
+          background: 'var(--bg-2)',
+          borderBottom: '1px solid var(--border)',
+          alignItems: 'center',
+        }}
+      >
+        <span style={{ color: 'var(--text-secondary)', fontSize: 10, flex: 1, minWidth: 80 }}>
+          {filename}
+        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 100 }}>
+          <label style={{ color: 'var(--text-muted)', fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Rate
+          </label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <input
+              type="range"
+              min={0.25}
+              max={4}
+              step={0.01}
+              value={playbackRate}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value);
+                setSynthParam(track.id, 'playbackRate', v);
+                audioEngine.setTrackParam(track.id, 'playbackRate', v);
+              }}
+              style={{ width: 80, accentColor: track.color, cursor: 'pointer' }}
+            />
+            <span style={{ color: 'var(--text-secondary)', fontSize: 9, width: 32, textAlign: 'right' }}>
+              {playbackRate.toFixed(2)}x
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const descriptor = soundLibrary[track.instrumentKey];
   if (!descriptor) return null;
 

@@ -10,6 +10,11 @@ interface Props {
   isPitched?: boolean;
 }
 
+// Module-level drag state shared across all StepButton instances
+let dragTrackId: string | null = null;
+let dragStartStep: number | null = null;
+let dragOccurred = false;
+
 export const StepButton = memo(function StepButton({
   trackId,
   trackColor,
@@ -27,27 +32,66 @@ export const StepButton = memo(function StepButton({
   );
   const isSelected = selectedStep === stepIndex;
 
+  const selection = useSequencerStore((s) => s.selection);
+  const isInSelection =
+    selection !== null &&
+    selection.trackId === trackId &&
+    stepIndex >= selection.fromStep &&
+    stepIndex <= selection.toStep;
+
   const isCurrentStep = useTransportStore((s) => s.currentStep === stepIndex);
   const isPlaying = useTransportStore((s) => s.isPlaying);
   const toggleStep = useSequencerStore((s) => s.toggleStep);
   const selectStep = useSequencerStore((s) => s.selectStep);
+  const setSelection = useSequencerStore((s) => s.setSelection);
 
   function handleClick() {
+    if (dragOccurred) {
+      dragOccurred = false;
+      return;
+    }
     toggleStep(trackId, stepIndex);
     if (isPitched) {
       selectStep(trackId, isSelected ? null : stepIndex);
     }
   }
 
+  function handlePointerDown(e: React.PointerEvent) {
+    e.stopPropagation();
+    dragTrackId = trackId;
+    dragStartStep = stepIndex;
+    dragOccurred = false;
+    setSelection(null);
+  }
+
+  function handlePointerEnter() {
+    if (dragTrackId === trackId && dragStartStep !== null && dragStartStep !== stepIndex) {
+      dragOccurred = true;
+      const from = Math.min(dragStartStep, stepIndex);
+      const to = Math.max(dragStartStep, stepIndex);
+      setSelection({ trackId, fromStep: from, toStep: to });
+    }
+  }
+
+  function handlePointerUp() {
+    dragTrackId = null;
+    dragStartStep = null;
+  }
+
   return (
     <button
       onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerEnter={handlePointerEnter}
+      onPointerUp={handlePointerUp}
       style={{
         width: 'var(--step-size)',
         height: 'var(--step-size)',
         borderRadius: 5,
-        border: isSelected
-          ? `2px solid rgba(255,255,255,0.7)`
+        border: isInSelection
+          ? '2px solid #00e5ff'
+          : isSelected
+          ? '2px solid rgba(255,255,255,0.7)'
           : groupStart
           ? '1px solid var(--border-light)'
           : '1px solid var(--border)',
@@ -59,7 +103,9 @@ export const StepButton = memo(function StepButton({
         cursor: 'pointer',
         position: 'relative',
         transition: 'background 0.04s ease',
-        boxShadow: active
+        boxShadow: isInSelection
+          ? '0 0 6px #00e5ff66'
+          : active
           ? `0 0 8px ${trackColor}66`
           : isCurrentStep && isPlaying
           ? '0 0 4px rgba(255,255,255,0.15)'

@@ -60,3 +60,23 @@ body {
   clip: rect(0,0,0,0);
   white-space: nowrap;
 }
+
+/* ── Safari / WebKit compatibility ── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Flex wrap compatibility */
+.flex-wrap-compat {
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}
+
+/* SoundPanel flex wrap */
+.sound-panel {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-flex-wrap: wrap;
+  flex-wrap: wrap;
+}

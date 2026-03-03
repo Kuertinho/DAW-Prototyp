@@ -9,6 +9,14 @@ export function makeSteps(defaultNote: string, count = STEP_COUNT): Step[] {
   }));
 }
 
+const TRACK_DEFAULTS = {
+  viewMode: 'sequencer' as const,
+  pianoRollNotes: [],
+  keyboardVisible: false,
+  trackType: 'synth' as const,
+  sampleUrl: null,
+};
+
 export const INITIAL_TRACKS: Track[] = [
   {
     id: 'track-kick-808',
@@ -18,6 +26,7 @@ export const INITIAL_TRACKS: Track[] = [
     color: '#e05252',
     synthParams: {},
     selectedStep: null,
+    ...TRACK_DEFAULTS,
   },
   {
     id: 'track-kick-punchy',
@@ -27,6 +36,7 @@ export const INITIAL_TRACKS: Track[] = [
     color: '#e07a52',
     synthParams: {},
     selectedStep: null,
+    ...TRACK_DEFAULTS,
   },
   {
     id: 'track-clap',
@@ -36,6 +46,7 @@ export const INITIAL_TRACKS: Track[] = [
     color: '#e0c452',
     synthParams: {},
     selectedStep: null,
+    ...TRACK_DEFAULTS,
   },
   {
     id: 'track-hihat-closed',
@@ -45,6 +56,7 @@ export const INITIAL_TRACKS: Track[] = [
     color: '#52e07a',
     synthParams: {},
     selectedStep: null,
+    ...TRACK_DEFAULTS,
   },
   {
     id: 'track-hihat-open',
@@ -54,6 +66,7 @@ export const INITIAL_TRACKS: Track[] = [
     color: '#52c4e0',
     synthParams: {},
     selectedStep: null,
+    ...TRACK_DEFAULTS,
   },
   {
     id: 'track-bass',
@@ -63,6 +76,7 @@ export const INITIAL_TRACKS: Track[] = [
     color: '#5274e0',
     synthParams: {},
     selectedStep: null,
+    ...TRACK_DEFAULTS,
   },
   {
     id: 'track-lead',
@@ -72,6 +86,7 @@ export const INITIAL_TRACKS: Track[] = [
     color: '#a052e0',
     synthParams: {},
     selectedStep: null,
+    ...TRACK_DEFAULTS,
   },
 ];
 

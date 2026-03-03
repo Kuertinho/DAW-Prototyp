@@ -1,5 +1,4 @@
 import React from 'react';
-import { useSequencerStore } from '../../store/useSequencerStore';
 import { soundLibrary } from '../../audio/soundLibrary';
 
 // Pitched synth types — MetalSynth and NoiseSynth are not pitched
@@ -40,16 +39,12 @@ const BLACK_H = 32;
 interface Props {
   trackId: string;
   instrumentKey: string;
-  selectedStep: number;
   trackColor: string;
+  onKeyClick: (note: string) => void;
+  currentNote?: string;
 }
 
-export function NoteKeyboard({ trackId, instrumentKey, selectedStep, trackColor }: Props) {
-  const setStepNote = useSequencerStore((s) => s.setStepNote);
-  const currentNote = useSequencerStore(
-    (s) => s.tracks.find((t) => t.id === trackId)?.steps[selectedStep]?.note ?? ''
-  );
-
+export function NoteKeyboard({ instrumentKey, trackColor, onKeyClick, currentNote }: Props) {
   const octaves = getOctaves(instrumentKey);
   const allWhites: string[] = [];
   const allBlacks: Array<{ note: string; offsetWhites: number } | null> = [];
@@ -88,7 +83,7 @@ export function NoteKeyboard({ trackId, instrumentKey, selectedStep, trackColor 
           return (
             <button
               key={note}
-              onClick={() => setStepNote(trackId, selectedStep, note)}
+              onClick={() => onKeyClick(note)}
               style={{
                 position: 'absolute',
                 left: i * KEY_W,
@@ -123,7 +118,7 @@ export function NoteKeyboard({ trackId, instrumentKey, selectedStep, trackColor 
           return (
             <button
               key={note}
-              onClick={() => setStepNote(trackId, selectedStep, note)}
+              onClick={() => onKeyClick(note)}
               style={{
                 position: 'absolute',
                 left: offsetWhites * KEY_W + (KEY_W - BLACK_W / 2) - BLACK_W / 2,

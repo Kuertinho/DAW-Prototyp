@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { soundLibrary } from '../../audio/soundLibrary';
 import { useSequencerStore } from '../../store/useSequencerStore';
 import { useMixerStore } from '../../store/useMixerStore';
@@ -13,15 +13,24 @@ const TRACK_COLORS = [
   '#c4e052', '#e05274',
 ];
 
-const CATEGORIES: InstrumentCategory[] = ['drums', 'bass', 'synth'];
-const CATEGORY_LABELS: Record<InstrumentCategory, string> = {
+const SYNTH_CATEGORIES: InstrumentCategory[] = ['drums', 'bass', 'synth'];
+const CATEGORY_LABELS: Record<string, string> = {
   drums: 'Drums',
   bass: 'Bass',
   synth: 'Synth',
 };
 
+const TRACK_DEFAULTS = {
+  viewMode: 'sequencer' as const,
+  pianoRollNotes: [],
+  keyboardVisible: false,
+  trackType: 'synth' as const,
+  sampleUrl: null,
+};
+
 export function AddTrackButton() {
   const [open, setOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const tracks = useSequencerStore((s) => s.tracks);
   const stepCount = useSequencerStore((s) => s.stepCount);
   const addTrack = useSequencerStore((s) => s.addTrack);
@@ -40,12 +49,45 @@ export function AddTrackButton() {
       color: TRACK_COLORS[colorIdx],
       synthParams: { ...descriptor.defaultSynthParams },
       selectedStep: null,
+      ...TRACK_DEFAULTS,
     };
 
     addTrack(newTrack);
     addChannel(newTrack.id);
     audioEngine.addTrack(newTrack);
     setOpen(false);
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    const colorIdx = tracks.length % TRACK_COLORS.length;
+    const filename = file.name.replace(/\.[^/.]+$/, ''); // strip extension
+
+    const newTrack: Track = {
+      id: `track-sample-${Date.now()}`,
+      name: filename,
+      instrumentKey: 'sample',
+      steps: makeSteps('C4', stepCount),
+      color: TRACK_COLORS[colorIdx],
+      synthParams: { playbackRate: 1 },
+      selectedStep: null,
+      viewMode: 'sequencer',
+      pianoRollNotes: [],
+      keyboardVisible: false,
+      trackType: 'sample',
+      sampleUrl: url,
+    };
+
+    addTrack(newTrack);
+    addChannel(newTrack.id);
+    audioEngine.addSampleTrack(newTrack.id, url);
+    setOpen(false);
+
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   return (
@@ -90,7 +132,7 @@ export function AddTrackButton() {
             boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
           }}
         >
-          {CATEGORIES.map((cat) => {
+          {SYNTH_CATEGORIES.map((cat) => {
             const entries = Object.values(soundLibrary).filter((d) => d.category === cat);
             return (
               <div key={cat}>
@@ -139,6 +181,55 @@ export function AddTrackButton() {
               </div>
             );
           })}
+
+          {/* Sample section */}
+          <div>
+            <div
+              style={{
+                padding: '8px 12px 4px',
+                color: 'var(--text-muted)',
+                fontSize: 9,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                borderTop: '1px solid var(--border)',
+                marginTop: 4,
+              }}
+            >
+              Sample
+            </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '6px 12px',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                fontSize: 11,
+                textAlign: 'left',
+                cursor: 'pointer',
+                transition: 'background 0.1s',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-3)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-primary)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
+              }}
+            >
+              Upload Sample…
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              style={{ display: 'none' }}
+              onChange={handleFileSelect}
+            />
+          </div>
         </div>
       )}
     </div>

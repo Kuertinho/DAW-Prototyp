@@ -1,14 +1,23 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useSequencerStore } from '../../store/useSequencerStore';
+import { useMixerStore } from '../../store/useMixerStore';
 import { TrackRow } from './TrackRow';
 import { PlayheadIndicator } from './PlayheadIndicator';
 import { AddTrackButton } from './AddTrackButton';
 import { MIN_STEPS, MAX_STEPS } from '../../constants/defaults';
+import { makeSteps } from '../../constants/tracks';
+import { Track } from '../../types/sequencer';
+import { audioEngine } from '../../audio/AudioEngine';
 
 const STEP_SIZE = 40;
 const STEP_GAP = 3;
 const GROUP_EXTRA = 6;
 const TRACK_LABEL_W = 140;
+
+const TRACK_COLORS = [
+  '#e05252', '#e07a52', '#e0c452', '#52e07a', '#52c4e0',
+  '#5274e0', '#a052e0', '#e052a0', '#52e0c4', '#e0b252',
+];
 
 function calcGridWidth(stepCount: number): number {
   const numGroupMarkers = Math.floor(stepCount / 4) - 1;
@@ -20,16 +29,81 @@ export function Sequencer() {
   const stepCount = useSequencerStore((s) => s.stepCount);
   const addSteps = useSequencerStore((s) => s.addSteps);
   const removeSteps = useSequencerStore((s) => s.removeSteps);
+  const addTrack = useSequencerStore((s) => s.addTrack);
+  const addChannel = useMixerStore((s) => s.addChannel);
+  const dragCounter = useRef(0);
+  const [isDragOver, setIsDragOver] = React.useState(false);
 
   const gridW = calcGridWidth(stepCount);
 
+  function handleDragOver(e: React.DragEvent) {
+    // Only handle if dragging an audio file (not track reorder)
+    if (Array.from(e.dataTransfer.items).some((item) => item.kind === 'file')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  }
+
+  function handleDragEnter(e: React.DragEvent) {
+    dragCounter.current++;
+    if (Array.from(e.dataTransfer.items).some((item) => item.kind === 'file')) {
+      setIsDragOver(true);
+    }
+  }
+
+  function handleDragLeave() {
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragOver(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    dragCounter.current = 0;
+    setIsDragOver(false);
+
+    const file = Array.from(e.dataTransfer.files).find((f) => f.type.startsWith('audio/'));
+    if (!file) return;
+
+    e.preventDefault();
+    const url = URL.createObjectURL(file);
+    const colorIdx = tracks.length % TRACK_COLORS.length;
+    const filename = file.name.replace(/\.[^/.]+$/, '');
+
+    const newTrack: Track = {
+      id: `track-sample-${Date.now()}`,
+      name: filename,
+      instrumentKey: 'sample',
+      steps: makeSteps('C4', stepCount),
+      color: TRACK_COLORS[colorIdx],
+      synthParams: { playbackRate: 1 },
+      selectedStep: null,
+      viewMode: 'sequencer',
+      pianoRollNotes: [],
+      keyboardVisible: false,
+      trackType: 'sample',
+      sampleUrl: url,
+    };
+
+    addTrack(newTrack);
+    addChannel(newTrack.id);
+    audioEngine.addSampleTrack(newTrack.id, url);
+  }
+
   return (
-    <div style={{
-      flex: 1,
-      overflowY: 'auto',
-      overflowX: 'auto',
-      background: 'var(--bg-0)',
-    }}>
+    <div
+      style={{
+        flex: 1,
+        overflowY: 'auto',
+        overflowX: 'auto',
+        background: isDragOver ? 'rgba(124, 92, 224, 0.05)' : 'var(--bg-0)',
+        transition: 'background 0.15s ease',
+        outline: isDragOver ? '2px dashed var(--accent)' : 'none',
+        outlineOffset: -2,
+      }}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Step number header */}
       <div style={{
         display: 'flex',
@@ -126,8 +200,8 @@ export function Sequencer() {
           <PlayheadIndicator />
         </div>
 
-        {tracks.map((track) => (
-          <TrackRow key={track.id} track={track} />
+        {tracks.map((track, index) => (
+          <TrackRow key={track.id} track={track} trackIndex={index} />
         ))}
 
         <AddTrackButton />

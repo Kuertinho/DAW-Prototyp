@@ -1,4 +1,4 @@
-export type InstrumentCategory = 'drums' | 'bass' | 'synth';
+export type InstrumentCategory = 'drums' | 'bass' | 'synth' | 'sample';
 
 export type SynthTypeName =
   | 'MembraneSynth'

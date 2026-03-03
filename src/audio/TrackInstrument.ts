@@ -5,6 +5,15 @@ import { createClap, createSnare } from './instruments/ClapSynth';
 import { createHiHatClosed, createHiHatOpen } from './instruments/HiHatSynth';
 import { createAcidBass, createSubBass, createReeseBass } from './instruments/BassSynth';
 import { createFMLead, createAMLead, createPluckLead } from './instruments/LeadSynth';
+import {
+  createCowbell,
+  createRimshot,
+  createShaker,
+  createTom,
+  createTechStab,
+  createTechPad,
+  createWobbleBass,
+} from './instruments/TechHouseInstruments';
 import { SynthTypeName } from '../types/audio';
 
 type AnyInstrument =
@@ -51,33 +60,43 @@ export class TrackInstrument {
 
   private createSynth(key: string): AnyInstrument {
     switch (key) {
-      case 'kick-808':     return createKick808();
-      case 'kick-punchy':  return createKickPunchy();
-      case 'kick-sub':     return createKickSub();
-      case 'kick-snap':    return createKickSnap();
-      case 'clap':         return createClap();
-      case 'snare':        return createSnare();
-      case 'hihat-closed': return createHiHatClosed();
-      case 'hihat-open':   return createHiHatOpen();
-      case 'bass-acid':    return createAcidBass();
-      case 'bass-sub':     return createSubBass();
-      case 'bass-reese':   return createReeseBass();
-      case 'lead-fm':      return createFMLead();
-      case 'lead-am':      return createAMLead();
-      case 'lead-pluck':   return createPluckLead();
-      default:             return createKick808();
+      case 'kick-808':      return createKick808();
+      case 'kick-punchy':   return createKickPunchy();
+      case 'kick-sub':      return createKickSub();
+      case 'kick-snap':     return createKickSnap();
+      case 'clap':          return createClap();
+      case 'snare':         return createSnare();
+      case 'hihat-closed':  return createHiHatClosed();
+      case 'hihat-open':    return createHiHatOpen();
+      case 'bass-acid':     return createAcidBass();
+      case 'bass-sub':      return createSubBass();
+      case 'bass-reese':    return createReeseBass();
+      case 'lead-fm':       return createFMLead();
+      case 'lead-am':       return createAMLead();
+      case 'lead-pluck':    return createPluckLead();
+      case 'cowbell':       return createCowbell();
+      case 'rimshot':       return createRimshot();
+      case 'shaker':        return createShaker();
+      case 'tom':           return createTom();
+      case 'tech-stab':     return createTechStab();
+      case 'tech-pad':      return createTechPad();
+      case 'wobble-bass':   return createWobbleBass();
+      default:              return createKick808();
     }
   }
 
   private buildFX(key: string): TrackFX {
     const volume = new Tone.Volume(0);
 
-    if (key === 'clap' || key === 'snare') {
+    if (key === 'clap' || key === 'snare' || key === 'rimshot') {
       const reverb = new Tone.Reverb({ decay: 1.5, wet: 0.35 });
       return { reverb, volume };
     }
 
-    if (key === 'lead-fm' || key === 'lead-am' || key === 'lead-pluck') {
+    if (
+      key === 'lead-fm' || key === 'lead-am' || key === 'lead-pluck' ||
+      key === 'tech-stab' || key === 'tech-pad'
+    ) {
       const delay = new Tone.FeedbackDelay({ delayTime: '8n', feedback: 0.35, wet: 0.3 });
       return { delay, volume };
     }
@@ -88,15 +107,38 @@ export class TrackInstrument {
   /** Normalized trigger — works for all synth types */
   trigger(note: string, time: number, velocity: number = 1): void {
     const dur = '16n';
-    const vel = velocity;
-
     if (
       this.synth instanceof Tone.NoiseSynth ||
       this.synth instanceof Tone.MetalSynth
     ) {
-      (this.synth as Tone.NoiseSynth).triggerAttackRelease(dur, time, vel);
+      (this.synth as Tone.NoiseSynth).triggerAttackRelease(dur, time, velocity);
     } else {
-      (this.synth as Tone.MembraneSynth).triggerAttackRelease(note, dur, time, vel);
+      (this.synth as Tone.MembraneSynth).triggerAttackRelease(note, dur, time, velocity);
+    }
+  }
+
+  /** Trigger with explicit duration in seconds (for piano roll notes) */
+  triggerWithDuration(note: string, durSeconds: number, time: number, velocity: number = 1): void {
+    if (
+      this.synth instanceof Tone.NoiseSynth ||
+      this.synth instanceof Tone.MetalSynth
+    ) {
+      (this.synth as Tone.NoiseSynth).triggerAttackRelease(durSeconds, time, velocity);
+    } else {
+      (this.synth as Tone.MembraneSynth).triggerAttackRelease(note, durSeconds, time, velocity);
+    }
+  }
+
+  /** Immediate preview trigger (for keyboard clicks) */
+  triggerPreview(note: string): void {
+    const now = Tone.now();
+    if (
+      this.synth instanceof Tone.NoiseSynth ||
+      this.synth instanceof Tone.MetalSynth
+    ) {
+      (this.synth as Tone.NoiseSynth).triggerAttackRelease('8n', now);
+    } else {
+      (this.synth as Tone.MembraneSynth).triggerAttackRelease(note, '8n', now);
     }
   }
 

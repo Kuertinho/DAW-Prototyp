@@ -1,10 +1,26 @@
 import React, { useCallback } from 'react';
 import { useMixerStore } from '../../store/useMixerStore';
 import { Track } from '../../types/sequencer';
+import { VerticalSlider } from './VerticalSlider';
 
 interface Props {
   track: Track;
 }
+
+const BTN_STYLE: React.CSSProperties = {
+  width: 28,
+  height: 20,
+  borderRadius: 3,
+  border: '1px solid var(--border-light)',
+  cursor: 'pointer',
+  fontSize: 9,
+  fontWeight: 700,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  WebkitAppearance: 'none',
+  appearance: 'none',
+};
 
 export function ChannelStrip({ track }: Props) {
   const channel = useMixerStore((s) => s.channels[track.id]);
@@ -13,8 +29,8 @@ export function ChannelStrip({ track }: Props) {
   const toggleSolo = useMixerStore((s) => s.toggleSolo);
 
   const onFaderChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setVolume(track.id, Number(e.target.value));
+    (value: number) => {
+      setVolume(track.id, value);
     },
     [track.id, setVolume]
   );
@@ -42,19 +58,13 @@ export function ChannelStrip({ track }: Props) {
       }} />
 
       {/* Vertical fader */}
-      <input
-        type="range"
+      <VerticalSlider
         min={0}
         max={100}
         value={channel.volume}
         onChange={onFaderChange}
-        style={{
-          writingMode: 'vertical-lr' as const,
-          direction: 'rtl' as const,
-          height: 80,
-          cursor: 'pointer',
-          accentColor: track.color,
-        }}
+        height={80}
+        accentColor={track.color}
         title={`${track.name} volume: ${channel.volume}%`}
       />
 
@@ -65,15 +75,9 @@ export function ChannelStrip({ track }: Props) {
       <button
         onClick={() => toggleMute(track.id)}
         style={{
-          width: 28,
-          height: 20,
-          borderRadius: 3,
-          border: '1px solid var(--border-light)',
+          ...BTN_STYLE,
           background: channel.muted ? '#e05252' : 'var(--bg-3)',
           color: channel.muted ? '#fff' : 'var(--text-muted)',
-          cursor: 'pointer',
-          fontSize: 9,
-          fontWeight: 700,
         }}
       >
         M
@@ -83,15 +87,9 @@ export function ChannelStrip({ track }: Props) {
       <button
         onClick={() => toggleSolo(track.id)}
         style={{
-          width: 28,
-          height: 20,
-          borderRadius: 3,
-          border: '1px solid var(--border-light)',
+          ...BTN_STYLE,
           background: channel.soloed ? '#e0c452' : 'var(--bg-3)',
           color: channel.soloed ? '#000' : 'var(--text-muted)',
-          cursor: 'pointer',
-          fontSize: 9,
-          fontWeight: 700,
         }}
       >
         S
